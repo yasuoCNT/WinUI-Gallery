@@ -1,0 +1,9 @@
+--- header
+Basic notification
+--- c#
+AppNotification notification = new AppNotificationBuilder()
+    .AddText("Welcome to WinUI Gallery")
+    .AddText("Explore interactive samples and discover the power of modern Windows UI.")
+    .BuildNotification();
+
+AppNotificationManager.Default.Show(notification);

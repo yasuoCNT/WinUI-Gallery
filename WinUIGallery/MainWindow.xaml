@@ -6,31 +6,43 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:WinUIGallery"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WinUIGallery.Models"
     xmlns:pages="using:WinUIGallery.Pages"
     Title="MainWindow"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-    <Grid x:Name="RootGrid" Loaded="RootGrid_Loaded">
+    <Grid
+        x:Name="RootGrid"
+        Loaded="RootGrid_Loaded"
+        PointerPressed="RootGrid_PointerPressed">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <TitleBar
             x:Name="titleBar"
-            Title="WinUI 3 Gallery"
+            Title="WinUI Gallery"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind rootFrame.CanGoBack, Mode=OneWay}"
             IsPaneToggleButtonVisible="True"
             PaneToggleRequested="TitleBar_PaneToggleRequested">
+            <TitleBar.Resources>
+                <!--
+                    TitleBar.Content uses Center alignment by default, which
+                    sizes content to its DesiredSize. Override to Stretch so
+                    the search box fills the available area up to MaxWidth.
+                -->
+                <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
+            </TitleBar.Resources>
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Tiles/GalleryIcon.ico" />
             </TitleBar.IconSource>
             <TitleBar.Content>
                 <AutoSuggestBox
                     x:Name="controlsSearchBox"
-                    Width="320"
+                    MaxWidth="580"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
                     x:FieldModifier="public"
@@ -133,6 +145,35 @@
             IsTabStop="False"
             Loaded="OnNavigationViewControlLoaded"
             SelectionChanged="OnNavigationViewSelectionChanged">
+            <NavigationView.Resources>
+                <DataTemplate x:Key="NavigationItemContentTemplate" x:DataType="models:ControlInfoDataItem">
+                    <Grid
+                        HorizontalAlignment="Stretch"
+                        ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{x:Bind Title}"
+                            TextTrimming="CharacterEllipsis" />
+                        <Border
+                            Grid.Column="1"
+                            Padding="6,2"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                            CornerRadius="4"
+                            Visibility="{x:Bind IsExperimental}">
+                            <TextBlock
+                                Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Experimental" />
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </NavigationView.Resources>
             <Frame
                 x:Name="rootFrame"
                 Navigated="OnRootFrameNavigated"
@@ -147,6 +188,7 @@
                     x:Name="FundamentalsItem"
                     AutomationProperties.AutomationId="FundamentalsItem"
                     Content="Fundamentals"
+                    SelectsOnInvoked="False"
                     Tag="Fundamentals">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8F1;" />
@@ -178,6 +220,11 @@
                             Content="Custom &amp; User Controls"
                             Tag="CustomUserControls" />
                         <NavigationViewItem
+                            x:Name="CustomXamlConditionalsPage"
+                            AutomationProperties.AutomationId="CustomXamlConditionals"
+                            Content="XAML Conditions"
+                            Tag="CustomXamlConditionals" />
+                        <NavigationViewItem
                             x:Name="ScratchPadPage"
                             AutomationProperties.AutomationId="ScratchPad"
                             Content="Scratch Pad"
@@ -189,6 +236,7 @@
                     x:Name="DesignItem"
                     AutomationProperties.AutomationId="DesignItem"
                     Content="Design"
+                    SelectsOnInvoked="False"
                     Tag="Design">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEB3C;" />
@@ -246,6 +294,7 @@
                     x:Name="AccessibilityItem"
                     AutomationProperties.AutomationId="AccessibilityItem"
                     Content="Accessibility"
+                    SelectsOnInvoked="False"
                     Tag="Accessibility">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE776;" />

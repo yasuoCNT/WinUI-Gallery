@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -8,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Windows.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,6 +55,41 @@ public sealed partial class MainWindow : Window
             AdjustNavigationViewMargin(force: true);
             AppWindow.Changed += (_, _) => AdjustNavigationViewMargin();
         }
+
+        InitializeSizePersistence();
+    }
+
+    // Use a rudimenentary persistence mechanism to save the window size between app launches.
+    // In the future we hope to have persistence APIs directly in WinUI/WinAppSDK.
+    private void InitializeSizePersistence()
+    {
+        ApplicationData appData = NativeMethods.IsAppPackaged
+            ? ApplicationData.GetDefault()
+            : ApplicationData.GetForUnpackaged(ProcessInfoHelper.Publisher, ProcessInfoHelper.ProductName);
+
+        const string containerName = "MainWindow_Settings";
+        const string valueName = "SavedSize";
+
+        if (appData.LocalSettings.Containers.TryGetValue(containerName, out var settingsContainer) &&
+            settingsContainer.Values.TryGetValue(valueName, out object? value) &&
+            value is Size savedSize)
+        {
+            Width = savedSize.Width;
+            Height = savedSize.Height;
+        }
+
+        Size lastSize = new Size(Width, Height);
+
+        SizeChanged += (s, e) =>
+        {
+            lastSize = new Size(Width, Height);
+        };
+
+        Closed += (s, e) =>
+        {
+            ApplicationDataContainer appDataContainer = appData.LocalSettings.CreateContainer(containerName, ApplicationDataCreateDisposition.Always);
+            appDataContainer.Values[valueName] = lastSize;
+        };
     }
 
     // Adjusts the NavigationView margin based on the window state
@@ -74,35 +111,47 @@ public sealed partial class MainWindow : Window
 
     private void RootGrid_Loaded(object sender, RoutedEventArgs e)
     {
-        // We need to set the minimum size here because the XamlRoot is not available in the constructor.
-        WindowHelper.SetWindowMinSize(this, 640, 500);
-
-        if (sender is FrameworkElement rootGrid && rootGrid.XamlRoot is not null)
-        {
-            rootGrid.XamlRoot.Changed += RootGridXamlRoot_Changed;
-        }
-
         NavigationOrientationHelper.UpdateNavigationViewForElement(NavigationOrientationHelper.IsLeftMode());
         TitleBarHelper.ApplySystemThemeToCaptionButtons(this, RootGrid.ActualTheme);
     }
 
-    private void RootGridXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args)
+    private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        WindowHelper.SetWindowMinSize(this, 640, 500);
+        PointerPointProperties props = e.GetCurrentPoint(null).Properties;
+
+        if (props.IsXButton1Pressed)
+        {
+            if (rootFrame.CanGoBack)
+            {
+                rootFrame.GoBack();
+                e.Handled = true;
+            }
+        }
+        else if (props.IsXButton2Pressed)
+        {
+            if (rootFrame.CanGoForward)
+            {
+                rootFrame.GoForward();
+                e.Handled = true;
+            }
+        }
     }
 
     private void SetWindowProperties()
     {
 #if DEBUG || DEBUG_UNPACKAGED
-        this.Title = "WinUI 3 Gallery Dev";
+        this.Title = "WinUI Gallery Dev";
         titleBar.Subtitle = "Dev";
 #else
-        this.Title = "WinUI 3 Gallery";
+        this.Title = "WinUI Gallery";
 #endif
         this.ExtendsContentIntoTitleBar = true;
         this.SetTitleBar(titleBar);
         this.AppWindow.SetIcon("Assets/Tiles/GalleryIcon.ico");
         this.AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+
+        MinWidth = 640;
+        MinHeight = 500;
     }
 
     private void OnPaneDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
@@ -153,7 +202,7 @@ public sealed partial class MainWindow : Window
             SettingsHelper.Current.UpdateRecentlyVisited(items => items.AddAsFirst(targetPageArguments.ToString() ?? "", SettingsHelper.MaxRecentlyVisitedSamples));
         }
     }
-    
+
     public void EnsureNavigationSelection(string id)
     {
         foreach (object rawGroup in this.NavigationView.MenuItems)
@@ -196,6 +245,8 @@ public sealed partial class MainWindow : Window
 
     public void AddNavigationMenuItems()
     {
+        DataTemplate navigationItemContentTemplate = (DataTemplate)NavigationViewControl.Resources["NavigationItemContentTemplate"];
+
         foreach (var group in ControlInfoDataSource.Instance.Groups.OrderBy(i => i.Title).Where(i => !i.IsSpecialSection))
         {
             var itemGroup = new NavigationViewItem() { Content = group.Title, Tag = group.UniqueId, DataContext = group, Icon = GetIcon(group.IconGlyph) };
@@ -209,14 +260,22 @@ public sealed partial class MainWindow : Window
 
             foreach (var item in group.Items)
             {
-                var itemInGroup = new NavigationViewItem() { IsEnabled = item.IncludedInBuild, Content = item.Title, Tag = item.UniqueId, DataContext = item };
+                var itemInGroup = new NavigationViewItem()
+                {
+                    IsEnabled = item.IncludedInBuild,
+                    Content = item,
+                    ContentTemplate = navigationItemContentTemplate,
+                    DataContext = item,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Tag = item.UniqueId,
+                };
 
                 var itemInGroupMenuFlyoutItem = new MenuFlyoutItem() { Text = $"Copy Link to {item.Title} sample", Icon = new FontIcon() { Glyph = "\uE8C8" }, Tag = item };
                 itemInGroupMenuFlyoutItem.Click += this.OnMenuFlyoutItemClick;
                 itemInGroup.ContextFlyout = new MenuFlyout() { Items = { itemInGroupMenuFlyoutItem } };
 
                 itemGroup.MenuItems.Add(itemInGroup);
-                AutomationProperties.SetName(itemInGroup, item.Title);
+                AutomationProperties.SetName(itemInGroup, item.IsExperimental ? $"{item.Title}, Experimental" : item.Title);
                 AutomationProperties.SetAutomationId(itemInGroup, item.UniqueId);
             }
 
@@ -356,6 +415,10 @@ public sealed partial class MainWindow : Window
             {
                 Navigate(typeof(ItemPage), "CustomUserControls");
             }
+            else if (selectedItem == CustomXamlConditionalsPage)
+            {
+                Navigate(typeof(ItemPage), "CustomXamlConditionals");
+            }
             else if (selectedItem == ScratchPadPage)
             {
                 Navigate(typeof(ItemPage), "ScratchPad");
@@ -404,8 +467,10 @@ public sealed partial class MainWindow : Window
                         bool flag = item.IncludedInBuild;
                         foreach (string queryToken in querySplit)
                         {
-                            // Check if token is not in string
-                            if (item.Title.IndexOf(queryToken, StringComparison.CurrentCultureIgnoreCase) < 0)
+                            // Check if token is not in the title or any of the search tags
+                            bool tokenMatches = item.Title.IndexOf(queryToken, StringComparison.CurrentCultureIgnoreCase) >= 0
+                                || item.Tags.Any(tag => tag.IndexOf(queryToken, StringComparison.CurrentCultureIgnoreCase) >= 0);
+                            if (!tokenMatches)
                             {
                                 // Token is not in string, so we ignore this item.
                                 flag = false;
@@ -474,7 +539,7 @@ public sealed partial class MainWindow : Window
                 {
                     foreach (NavigationViewItem child in item.MenuItems)
                     {
-                        if ((string)child.Content == name)
+                        if (child.DataContext is ControlInfoDataItem childData && childData.Title == name)
                         {
                             // We are the item corresponding to the selected one, update selection!
 

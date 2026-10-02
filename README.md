@@ -1,6 +1,6 @@
 ![WinUI Gallery hero image](./.github/assets/ReadmeHero-dark.png)
 
-<h1 align="center">WinUI 3 Gallery</h1>
+<h1 align="center">WinUI Gallery</h1>
 <p align="center">Companion app for <a style="text-decoration:none" href="https://docs.microsoft.com/windows/apps/winui">WinUI</a> & <a style="text-decoration:none" href="https://github.com/microsoft/WindowsAppSDK">Windows App SDK</a> APIs</p>
 
 
@@ -9,7 +9,7 @@ This app demonstrates all of the WinUI 3 controls and styles available to make a
 
 
 <p align="center">
-  <img src="./.github/assets/Screenshot-light.png" alt="WinUI 3 Gallery" width="400"/>
+  <img src="./.github/assets/Screenshot-light.png" alt="WinUI Gallery" width="800"/>
 </p>
 <p align="center">
   <a style="text-decoration:none" href="https://apps.microsoft.com/detail/9P3JFPWWDZRC?launch=true&mode=full">
@@ -41,7 +41,7 @@ You can also learn more about current happenings with WinUI Gallery in the [proj
 
 ## 🚀 Getting started
 
-Quick start guide to building the WinUI 3 Gallery:
+Quick start guide to building the WinUI Gallery:
 
 
 ### 1. Set up the environment
@@ -62,6 +62,16 @@ git clone https://github.com/microsoft/WinUI-Gallery.git
 
 Ensure that the `WinUIGallery` project is set as the startup project in Visual Studio.
 
+Gallery uses an experimental Windows App SDK to demonstrate upcoming features.
+Use the normal `Debug` or `Release` configuration; the SDK version is pinned in
+`standalone.props`. The runtime is bundled with the app (self-contained deployment)
+instead of referencing a shared Windows App SDK framework package. Experimental
+APIs can change or be removed before a stable release.
+
+The **Windowing APIs** page combines stable window creation with experimental
+window sizing examples. Each experimental example has its own label and warning;
+the stable example retains its original APIs.
+
 > [!WARNING]
 > Try deleting [`nuget.config`](nuget.config) and building again if you get the following build error:
 > > Assets file 'C:\Users\\...\source\repos\WinUI-Gallery\WinUIGallery\obj\WinUIGallery\project.assets.json' not found. Run a NuGet package restore to generate this file.
@@ -71,6 +81,9 @@ Ensure that the `WinUIGallery` project is set as the startup project in Visual S
 ## ➡️ Further information
 
 To learn more about Windows app development, go to the [Windows Dev Center](https://developer.microsoft.com/windows).
+
+Maintainers can follow the [release runbook](docs/PublishingNewVersion.md) to
+coordinate Microsoft Store publishing with a GitHub release.
 
 
 ### Related topics
@@ -85,6 +98,6 @@ To learn more about Windows app development, go to the [Windows Dev Center](http
 ## 🏆 Contributors
 Thanks to our amazing contributors!
 
-[![WinUI 3 Gallery Contributors](https://contrib.rocks/image?repo=microsoft/WinUI-Gallery)](https://github.com/microsoft/WinUI-Gallery/graphs/contributors)
+[![WinUI Gallery Contributors](https://contrib.rocks/image?repo=microsoft/WinUI-Gallery)](https://github.com/microsoft/WinUI-Gallery/graphs/contributors)
 
 Made with [contrib.rocks](https://contrib.rocks).

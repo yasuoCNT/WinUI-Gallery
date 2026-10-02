@@ -19,6 +19,12 @@
         <EnableMsixTooling>true</EnableMsixTooling>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
         <SelfContained>true</SelfContained>
+        <WindowsAppSdkSelfContained>true</WindowsAppSdkSelfContained>
+    </PropertyGroup>
+
+	<!-- WinUI Repo build support -->
+    <PropertyGroup>
+        <WindowSdkMSIXVersion Condition="'$(WindowSdkMSIXVersion)' == ''">1.7.260316102</WindowSdkMSIXVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -33,7 +39,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.20250806.1">
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="$(WindowSdkMSIXVersion)">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
